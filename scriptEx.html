@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+  <title> 자바스크립트 예제 </title>
+ </head>
+
+ <body>
+  
+ </body>
+</html>
+<script>
+
+/*var oAppleModule = (function(){
+	var nAppleNumber = 1;
+	var oAppleInfo = {
+		color : "deepblue",
+		size : 5
+	}
+
+	var oCopyAppleInfo = {
+		color : oAppleInfo.color,
+		size : oAppleInfo.size
+	}
+
+	function getAppleColor(){
+		console.log("nAppleColor is : " + oAppleInfo.color);
+	}
+
+	function plusOneAppleNumber(){
+		return nAppleNumber++;
+	}
+
+	return {
+		getAppleColor : getAppleColor,
+		plusOneAppleNumber : plusOneAppleNumber,
+		oAppleInfo : oAppleInfo
+	//	oAppleInfo : oCopyAppleInfo
+	}
+
+
+})();
+
+oAppleModule.oAppleInfo.color = "red";
+oAppleModule.getAppleColor();
+*/
+function wrapFunction(){
+	var nAppleNumber = 1;
+	this.getApple = function(){
+		console.log("nAppleNumber is : " +  nAppleNumber);
+	}
+
+	function plusOneAppleNumber(){
+		return nAppleNumber++;
+	}
+
+}
+var oWrap = new wrapFunction();
+oWrap.getApple();
+
+</script>

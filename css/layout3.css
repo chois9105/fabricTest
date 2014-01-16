@@ -1,0 +1,292 @@
+.panelsWrapper{
+	display:inline-block;	
+
+	}
+
+
+.textPanel{
+	width: 36px;
+	height: 36px;
+	margin: 10px 5px;
+	display:inline-block;
+	float:left;
+}
+.textButton{
+	padding:0px;
+	margin:0px;
+	width: 36px;
+	height: 36px;
+	background : url("/FabricTest/images/han.png");
+	display:block;
+	float:left;
+}
+.textOption{
+	padding: 0px;
+	margin : 5px 5px 5px 0;
+	display: none;
+	clear:both;
+	float:left;
+}
+.textOption li{
+	width: 32px;
+	height: 32px;
+	margin : 0px;
+	padding : 0px;
+	display:inline-block;
+	border:1px solid black;
+}
+
+.textOption li:nth-child(1){
+	background : url("/FabricTest/images/bold.png");
+}
+.textOption li:nth-child(2){
+	background : url("/FabricTest/images/italic.png");
+}
+.textOption li:nth-child(3){
+	background : url("/FabricTest/images/underline.png");
+}
+.textContents{
+	display:none;
+}
+
+.inputButton{
+	position:relative;
+	display:none;
+	top:-10px;
+}
+
+.shapePanel{
+	width: 36px;
+	height: 36px;
+	margin: 10px 5px;
+	display:inline-block;
+	float:left;
+}
+.shapeButton{
+	padding:0px;
+	margin:0px;
+	width: 36px;
+	height: 36px;
+	background : url("/FabricTest/images/shape.png");
+	display:block;
+	float:left;
+}
+
+.shapeOption{
+	padding: 0px;
+	margin : 5px 5px 5px 0;
+	display: none;
+	clear:both;
+	float:left;
+}
+
+.shapeOption li{
+	width: 32px;
+	height: 32px;
+	margin : 0px;
+	padding : 0px;
+	display:inline-block;
+	border:1px solid black;
+}
+
+.shapeOption li:nth-child(1){
+	background : url("/FabricTest/images/rect.png");
+}
+.shapeOption li:nth-child(2){
+	background : url("/FabricTest/images/circle.png");
+}
+.shapeOption li:nth-child(3){
+	background : url("/FabricTest/images/line.png");
+}
+.shapeOption li:nth-child(4){
+	background : url("/FabricTest/images/free_draw.png");
+}
+.shapeOption li:nth-child(5){
+	background : url("/FabricTest/images/rect.png");
+}
+
+
+.imagePanel{
+	width: 36px;
+	height: 36px;
+	margin: 10px 5px;
+	display:inline-block;
+	float:left;
+}
+.imageButton{
+	padding:0px;
+	margin:0px;
+	width: 36px;
+	height: 36px;
+	background : url("/FabricTest/images/image.png");
+	display:block;
+	float:left;
+}
+
+.imageOption{
+	padding: 0px;
+	margin : 5px 5px 5px 0;
+	display: none;
+	clear:both;
+	float:left;
+}
+
+.imageOption li{
+	width: 32px;
+	height: 32px;
+	margin : 0px;
+	padding : 0px;
+	display:inline-block;
+	border:1px solid black;
+}
+
+.imageOption li:nth-child(1){
+	background : url("/FabricTest/images/plus.png");
+}
+.imageOption li:nth-child(2){
+	background : url("/FabricTest/images/minus.png");
+}
+.imageOption li:nth-child(3){
+	background : url("/FabricTest/images/plus.png");
+}
+.imageOption li:nth-child(4){
+	background : url("/FabricTest/images/minus.png");
+}
+
+.colorPanel {
+	width:250px;
+	height:110px;
+	margin: 10px 5px;
+	display:inline-block;
+	float:left;
+}
+.colorSelector {
+	position: relative;
+	display:inline-block;
+	width: 72px;
+	height: 72px;
+	float:left
+}
+.colorSelector div {
+	position: relative;
+	width: 72px;
+	height: 72px;
+
+}
+
+.colorCategory {
+	border:1px solid pink;
+	height:32px;
+	display: inline-block;
+	margin:0 5px 5px 5px;
+	padding:0;
+}
+
+.colorCategory li {
+	position: relative;
+	width: 32px;
+	height: 32px;
+	margin-left:5px;
+	padding-bottom:0;
+	display:inline-block;
+}
+
+.toolPanel{
+	width: 200px;
+	height: 110px;
+	margin: 10px 5px;
+	display:inline-block;
+	float:left;
+}
+
+.toolBox{
+	padding: 0px;
+	margin : 0 5px 5px 0;
+	display: block;
+	clear:both;
+	float:left;
+}
+
+.toolBox li{
+	width: 32px;
+	height: 32px;
+	margin : 0px;
+	padding : 0px;
+	display:inline-block;
+	border:1px solid black;
+}
+
+.toolBox li:nth-child(1){
+	background : url("/FabricTest/images/back.png");
+}
+.toolBox li:nth-child(2){
+	background : url("/FabricTest/images/forward.png");
+}
+.toolBox li:nth-child(3){
+	background : url("/FabricTest/images/trash_can.png");
+}
+.toolBox li:nth-child(4){
+	background : url("/FabricTest/images/align.png");
+}
+.toolBox li:nth-child(5){
+	background : url("/FabricTest/images/memo.png");
+}
+.toolBox li:nth-child(6){
+	background : url("/FabricTest/images/load.png");
+}
+
+.memo{
+	border: 1px solid #CCCCCC;
+	width: 200px;
+	height: 110px;
+	display:inline-block;
+	clear:both;
+	margin:10px 5px;
+	overflow:auto;
+	overflow-y:auto;
+}
+.memo ul{
+	padding:0;
+	margin:0;
+	list-style:none;
+}
+
+.memo li{
+	margin:0;
+	padding:0 0 0 5px;
+	border-bottom-style:solid;
+	border-bottom-width:1px;
+	border-bottom-color:#CCCCCC;
+}
+
+.canvas-container{
+	border:1px solid #CCCCCC;
+	display:block;
+	clear:both;
+}
+
+.opend{
+	width:380px;
+	height:110px;
+}
+
+.panelColor {
+	background: -moz-linear-gradient(top,  rgba(255,255,255,1) 0%, rgba(211,211,211,0.65) 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,1)), color-stop(100%,rgba(211,211,211,0.65))); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(211,211,211,0.65) 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(211,211,211,0.65) 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(211,211,211,0.65) 100%); /* IE10+ */
+	background: linear-gradient(to bottom,  rgba(255,255,255,1) 0%,rgba(211,211,211,0.65) 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#a6d3d3d3',GradientType=0 ); /* IE6-9 */
+
+	border: 1px solid #CCCCCC;
+}
+
+.file{
+	width:180px;
+}
+.file:hover, .colorSelector:hover, button:hover ,li:hover, .textContents:focus{
+ box-shadow: 0 0 5px rgba(0, 0, 255, 1);
+    -webkit-box-shadow: 0 0 5px rgba(0, 0, 255, 1); 
+    -moz-box-shadow: 0 0 5px rgba(0, 0, 255, 1); 
+}

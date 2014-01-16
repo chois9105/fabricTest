@@ -1,0 +1,743 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title> painter</title>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="css/colorpicker.css" type="text/css" />
+<link rel="stylesheet" media="screen" type="text/css" href="css/layout3.css" />
+<link re="stylesheet" href="css/main.css" type="text/css" />
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="scripts/all.js"></script>
+<script src="scripts/colorpicker.js"></script>
+ </head>
+ <body>
+ <div class="panelsWrapper">
+	 <div class="textPanel panelColor">
+		<button class="textButton"></button>
+		<ul class="textOption">
+			<li></li>
+			<li></li>
+			<li></li>
+		</ul>
+		<textarea class="textContents" col="40" rows="5"></textarea>
+		<button class="inputButton">입력</button>
+	 </div>
+
+	<div class="shapePanel panelColor">
+		<button class="shapeButton"></button>
+		<ul class="shapeOption">
+			<li></li>
+			<li></li>
+			<li class="event"></li>
+			<li class="event"></li>
+			<li class="event"></li>
+			<li></li>
+		</ul>
+	</div>
+
+	<div class="imagePanel panelColor">
+		<button class="imageButton"></button>
+		<ul class="imageOption">
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<input type="file" class="imageFile" />
+		</ul>
+	</div>
+
+	<div class="colorPanel panelColor">
+		<div class="colorSelector">
+			<div style="background-color: #000000"></div>
+		</div>
+		<ul class="colorCategory">
+				<li style="background-color:#2200ff"></li>
+				<li style="background-color:#ffffff"></li>
+				<li style="background-color:#aaaaaa"></li>
+				<li style="background-color:#dddddd"></li>
+		</ul>
+		<ul class="colorCategory">
+				<li style="background-color:#ff0000"></li>
+				<li style="background-color:#00ff00"></li>
+				<li style="background-color:#0000ff"></li>
+				<li style="background-color:#eeeeee"></li>
+		</ul>
+	</div>
+
+	<div class="toolPanel panelColor">
+		<ul class="toolBox">
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+		</ul>
+		<input type="file" class="file" />
+	</div>
+
+	<div class="memo panelColor">
+		<ul>
+		</ul>
+	</div>
+
+
+</div>
+
+<canvas id="c" width="800" height="800" style="border: 1px solid #ccc"></canvas>
+
+ </body>
+</html>
+
+<script>
+var canvas = new fabric.Canvas('c');
+var color = "#000000";
+var eventOn = false;
+$(document).ready(canvasInit);
+	
+function canvasInit() {
+// Text 관련
+
+	$("button.inputButton").click(insertText);
+	$("button.textButton").click(toggleTextOption);
+	$("ul.textOption li:nth-child(1)").click(setBold);
+	$("ul.textOption li:nth-child(2)").click(setItalic);	
+	$("ul.textOption li:nth-child(3)").click(setUnderline);
+	$(".textContents").keyup(editText);
+//
+
+// Shape 관련
+	$("button.shapeButton").click(toggleShapeOption);
+	$("ul.shapeOption li:nth-child(1)").click(drawRect);
+	$("ul.shapeOption li:nth-child(2)").click(drawCircle);	
+	$("ul.shapeOption li:nth-child(3)").click(drawLine);
+	$("ul.shapeOption li:nth-child(4)").click(startFreeDrawing);
+	$("ul.shapeOption li:nth-child(5)").click(startFreeRect);
+	$("ul.shapeOption li:nth-child(6)").click(drawOutlineRect);
+//
+
+// Image 관련
+	$("button.imageButton").click(toggleImageOption);	
+	$(".imageOption li:nth-child(1)").click(upBrightness);
+	$(".imageOption li:nth-child(2)").click(downBrightness);
+	$(".imageOption li:nth-child(3)").click(upBackgroundBrightness);
+	$(".imageOption li:nth-child(4)").click(downBackgroundBrightness);
+	$(".imagePanel .imageFile").change(function(){
+		insertImageFile(this);
+	})
+	
+//
+
+
+// Color 관련
+	$(".colorSelector").ColorPicker({
+			color:"#ff0000",
+			onChange:changeColor
+	})
+	
+	$(".colorCategory li, .colorSelector div").click(changeColor2)
+//
+
+// Tool 관련; 
+
+	$("ul.toolBox li:nth-child(1)").click(undo);
+	$("ul.toolBox li:nth-child(2)").click(redo);	
+	$("ul.toolBox li:nth-child(3)").click(removeObject);
+	$("ul.toolBox li:nth-child(4)").click(alignObject);
+	$("ul.toolBox li:nth-child(5)").click(writeMemo);
+	$("ul.toolBox li:nth-child(6)").click(downOpacity);
+	$("ul.toolBox li:nth-child(7)").click(upOpacity);
+	$(".toolPanel .file").change(function(){
+		changeBackgroundImage(this);
+	})
+	
+//
+
+// 기타
+	canvas.selection = false;
+	$(".panelsWrapper>div>button").click(initPanels);
+	$("li").not(".event").click(_offEvents);
+
+	// 컬러와 toolbox 제외하고 설정
+	canvas.on("object:selected",function(obj){
+		if(obj.target.type === "text"){
+			synchronizeContents(obj);
+		}
+	});
+	onObserveObject();
+	canvas.on("selection:cleared",function(){
+		$(".textContents").val("");
+	})
+
+}
+
+
+function toggleTextOption(){
+	$(".textPanel").toggleClass("opend");
+	if($(".textOption").css("display") === "none" ){
+		$(".textContents").show();
+		$(".inputButton").show();
+		$(".textOption").show();
+	}else{
+		$(".textContents").hide();
+		$(".textOption").hide();
+		$(".inputButton").css("display","none");
+	}
+}
+
+function toggleShapeOption(){
+	var a = $(".shapePanel");
+	a.toggleClass("opend");
+	if($(".shapeOption").css("display") === "none" ){
+		$(".shapePanel").addClass("opend");
+		$(".shapeOption").show();
+	}else{
+		$(".shapeOption").hide();
+	}
+
+	a = null;
+}
+
+function toggleImageOption(){
+	$(".imagePanel").toggleClass("opend");
+	if($(".imageOption").css("display") === "none" ){
+		$(".imagePanel").addClass("opend");
+		$(".imageOption").show();
+	}else{
+		$(".imageOption").hide();
+	}
+}
+
+function setBold(){
+	var activeObject = canvas.getActiveObject();
+	var fontWeight = (activeObject.getFontWeight() === 'normal') ? 'bold' : 'normal';
+	activeObject.setFontWeight(fontWeight);
+	canvas.renderAll();
+
+	activeObject = null;
+	fontWeight = null;
+}
+
+function setItalic(){
+	var activeObject = canvas.getActiveObject();
+	var fontStyle = (activeObject.getFontStyle() === 'italic') ? 'normal' : 'italic'; 
+	activeObject.setFontStyle(fontStyle);
+	canvas.renderAll();
+
+	activeObject = null;
+	fontStyle = null;
+}
+function setUnderline(){
+	var activeObject = canvas.getActiveObject();
+	var textDecoration =  (activeObject.getTextDecoration() === '') ? 'underline' : '';
+	activeObject.setTextDecoration(textDecoration);
+	canvas.renderAll();
+
+	activeObject = null;
+	textDecoration = null;
+}
+function insertText(){
+	var contents = $(".textContents").val();
+	var text = new fabric.Text(contents,{
+		top:100,
+		left:100
+	})
+	canvas.add(text);
+	$(".textContents").val("");
+	text = null;
+}
+
+function editText(){
+	var activeObject = canvas.getActiveObject();
+	if(activeObject.type === "text"){
+		var contents = $(".textContents").val();
+		activeObject = canvas.getActiveObject();
+		activeObject.setText(contents);
+		canvas.renderAll();
+		contents = null;
+	}
+	activeObject = null;
+
+
+}
+
+function synchronizeContents(obj){
+	var text = obj.target.getText();
+	$(".textContents").val(text);
+	text = null;
+}
+
+function drawRect(){
+	canvas.add(new fabric.Rect({
+		width : 150,
+		height : 150,
+		fill : color,
+		top : 300,
+		left : 300
+	}));
+}
+
+function drawCircle(){
+	canvas.add(new fabric.Circle({
+		radius : 40,
+		fill : color,
+		top : 125,
+		left : 125,
+		scaleY : 0.5,
+		flipY : true
+	}));
+}
+
+function drawLine(){
+	var needFirstPoint = true;
+	var startX = 0;
+	var startY = 0;
+	var rangeX;
+	var rangeY;
+
+	canvas.on("mouse:down",_drawLine);
+	function _drawLine(option){
+		offObserveObject();
+		eventOn = true;
+		var currentX = option.e.offsetX;
+		var currentY = option.e.offsetY;
+		if(needFirstPoint == true){
+			startX = currentX;
+			startY = currentY;
+			rangeX = startX;
+			rangeY = startY;
+			needFirstPoint = false;
+		}else{
+			var left, top;
+			left = (startX >= currentX) ? currentX : startX;
+			top = (startY >= currentY) ? currentY : startY;
+					
+			var line = new fabric.Line([startX,startY,currentX,currentY],{
+				fill: color,
+				stroke: color,
+				top:top,
+				left:left,
+				strokeWidth: 2,
+				hasControls: false,
+				hasRotatingPoint: false,
+				hasBorders:false,
+				selectable:false
+			});
+			
+			canvas.add(line);
+			canvas.renderAll();
+			startX = currentX;
+			startY = currentY;
+
+			line = null;
+			
+			if(checkEndOfPath(currentX,currentY)){
+				onObserveObject();
+				needFirstPoint = true;
+				index++;	
+				jsonArray[index] = canvas.toJSON();
+				index2 = index-1;	
+
+			} // checkEndOfPath 
+		} // else
+
+		function checkEndOfPath(currentX,currentY){
+
+			var checkX = false;
+			var checkY = false;
+			if(currentX >= rangeX - 5 && currentX <= rangeX + 5){
+				checkX = true;
+			}
+			if(currentY >= rangeY - 5 && currentY <= rangeY + 5){
+				checkY = true;
+			}
+			if(checkX == true && checkY == true){
+				return true;
+			}else{
+				return false;
+			}
+		}	
+	}
+}
+
+function startFreeDrawing(){
+	canvas.isDrawingMode = true;
+	eventOn = true;
+}
+
+function startFreeRect(){
+	var started = false;
+	var x = 0;
+	var y = 0;
+	eventOn = true;
+
+	canvas.on('mouse:down', function(options) {
+		canvas.forEachObject(function(obj){
+			obj.selectable = false;
+		});				
+		var mouse = canvas.getPointer(options.e);
+		started = true;
+		x = mouse.x;
+		y = mouse.y;
+		
+		var square = new fabric.Rect({
+			width:0,
+			height:0,
+			left:x,
+			top:y,
+			fill:color
+					
+		});
+		canvas.add(square);
+		canvas.renderAll();
+		canvas.setActiveObject(square);
+	});
+	
+	canvas.on('mouse:move', function(options) {
+		if(!started){
+			return false;
+		}
+		
+		var mouse = canvas.getPointer(options.e);
+		var w = mouse.x - x;
+		var h = mouse.y - y;
+		if(!w || !h){
+			return false;
+		}
+	 	var square = canvas.getActiveObject();
+	 	square.hasControls = false;
+		square.set({width:w,height:h});
+		
+		canvas.renderAll();
+	});
+	
+	canvas.on('mouse:up', function(options) { 
+		if(started){
+			started = false;
+		}
+		var square = canvas.getActiveObject();
+		var positionLeft = square.getCenterPoint().x - Math.abs((square.get('width') /2));
+		var positionTop = square.getCenterPoint().y - Math.abs((square.get('height') /2))
+		square2 = new fabric.Rect({
+			width:Math.abs(square.get('width')),
+			height:Math.abs(square.get('height')),
+			left:positionLeft,
+			top:positionTop,
+			fill:color,
+		});	
+		canvas.remove(square);
+		index--;
+		square.hasControls = true;
+		canvas.setActiveObject(square2);
+		canvas.add(square2);
+		index--;
+		canvas.renderAll();
+		
+	});
+ 
+}
+
+function drawOutlineRect(){
+	var rect = new fabric.Rect({
+		width : 150,
+		height : 150,
+		fill : 'transparent',
+		top : 300,
+		left : 300
+	})
+
+	rect.setStroke('2px');
+	canvas.add(rect);
+	canvas.renderAll();
+
+}
+
+function upBrightness(){
+	var activeObject = canvas.getActiveObject();
+	if (!activeObject.filters.length) {
+		var brightnessValue = 10;
+		activeObject.filters.push(new fabric.Image.filters.Brightness({brightness: brightnessValue}));
+	}
+	else {
+		var brightnessValue = activeObject.filters[0].brightness;
+		brightnessValue +=10;
+		activeObject.filters[0].brightness = brightnessValue;	
+	};
+  activeObject.applyFilters(canvas.renderAll.bind(canvas));
+	
+}
+
+function downBrightness(){
+	var activeObject = canvas.getActiveObject();
+	if (!activeObject.filters.length) {
+		brightnessValue = -10;
+		activeObject.filters.push(new fabric.Image.filters.Brightness({brightness: brightnessValue}));	
+	}
+
+	else {
+		var brightnessValue = activeObject.filters[0].brightness;
+		brightnessValue -=10;
+		activeObject.filters[0].brightness = brightnessValue;	
+	}
+			
+    activeObject.applyFilters(canvas.renderAll.bind(canvas));
+    
+}
+
+
+function upBackgroundBrightness(){
+	canvas.setActiveObject(canvas.item(0));
+	var activeObject = canvas.getActiveObject();
+	console.log(activeObject);
+	if (!activeObject.filters.length) {
+		var brightnessValue = 10;
+		activeObject.filters.push(new fabric.Image.filters.Brightness({brightness: brightnessValue}));
+	}
+	else {
+		var brightnessValue = activeObject.filters[0].brightness;
+		brightnessValue +=10;
+		activeObject.filters[0].brightness = brightnessValue;	
+	};
+  activeObject.applyFilters(canvas.renderAll.bind(canvas));
+  canvas.discardActiveObject();
+}
+
+function downBackgroundBrightness(){
+	canvas.setActiveObject(canvas.item(0));
+	var activeObject = canvas.getActiveObject();
+	if (!activeObject.filters.length) {
+		brightnessValue = -10;
+		activeObject.filters.push(new fabric.Image.filters.Brightness({brightness: brightnessValue}));	
+	}
+
+	else {
+		var brightnessValue = activeObject.filters[0].brightness;
+		brightnessValue -=10;
+		activeObject.filters[0].brightness = brightnessValue;	
+	}
+			
+    activeObject.applyFilters(canvas.renderAll.bind(canvas));
+    canvas.discardActiveObject();
+}
+
+
+
+
+function insertImageFile(input){
+	canvas.clear();
+	if (input.files && input.files[0]) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			var url = e.target.result;
+			fabric.Image.fromURL(url, function (oImg) {
+			canvas.add(oImg);
+			canvas.renderAll();
+		  }, {width:canvas.width, height:canvas.height, selectable:false});
+
+			canvas.renderAll();
+		}; 
+		reader.readAsDataURL(input.files[0]);
+	}
+
+}
+
+function changeColor(hsb, hex, rgb){
+	$('.colorSelector div').css('backgroundColor', '#' + hex);
+	canvas.getActiveObject().setColor("#"+hex);
+	canvas.renderAll();
+	color = "#"+hex;
+}
+
+function changeColor2(){
+		color = $(this).css('backgroundColor');
+		canvas.getActiveObject().setColor(color);
+		canvas.renderAll();
+}
+
+function removeObject(){
+	var activeObject = canvas.getActiveObject();
+	canvas.remove(activeObject);
+	activeObject = null;
+}
+
+function alignObject(){
+	var activeObject = canvas.getActiveObject();
+	var centerPoint = activeObject.getCenterPoint();
+	var x = centerPoint.x - (activeObject.getWidth()/2);
+	var y = centerPoint.y - (activeObject.getHeight()/2);
+	activeObject.set({angle:0, left:x, top:y});	
+	canvas.renderAll();
+
+	y = null;
+	x = null;
+	centerPoint = null;
+	activeObject = null;
+}
+
+function upOpacity(){
+	var activeObject = canvas.getActiveObject();
+	var currentOpacity = parseFloat(activeObject.getOpacity());
+	var modifiedOpacity = currentOpacity + 0.1
+	
+	modifiedOpacity =	modifiedOpacity.toFixed(1);
+	if(modifiedOpacity <= 1){
+		activeObject.setOpacity(modifiedOpacity);
+		console.log("current Opacity : " + activeObject.getOpacity());
+		canvas.renderAll();
+	}
+	
+	modifiedOpacity = null;
+	currentOpacity = null;
+	activeObject = null;
+	
+}
+
+function downOpacity(){
+	var activeObject = canvas.getActiveObject();
+	var currentOpacity = activeObject.getOpacity();
+	var modifiedOpacity = currentOpacity - 0.1
+
+	modifiedOpacity = modifiedOpacity.toFixed(1) // 소수점 1번째 자리까지 표시
+
+	if(modifiedOpacity >= 0){
+		activeObject.setOpacity(modifiedOpacity);
+		console.log("current Opacity : " + activeObject.getOpacity());
+		canvas.renderAll();
+	}
+	
+	modifiedOpacity = null;
+	currentOpacity = null;
+	activeObject = null;
+	
+}
+
+function writeMemo(){
+	var count=0;
+	$(".memo ul li").remove();
+	canvas.forEachObject(function(obj){
+		if(obj.type == "text"){
+			count++;
+			var memo = count+". "+obj.getText();
+			var wrapper = "<li>"+memo+"</li>";
+			$(".memo ul").append(wrapper);
+		}
+	});	
+}
+
+function changeBackgroundImage(input){
+	if (input.files && input.files[0]) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			var url = e.target.result;
+			fabric.Image.fromURL(url, function (oImg) {
+			//oImg.set('left', PosX).set('top',PosY);
+			canvas.add(oImg);
+			canvas.renderAll();
+		  }, {"left": 100, "top": 100, "scaleX": 0.25, "scaleY": 0.25});
+
+			canvas.renderAll();
+		}; 
+		reader.readAsDataURL(input.files[0]);
+	}
+
+
+}
+
+
+function initPanels(){
+	var $filter = $(this).parents(".opend");
+	var $panel = $(".opend").not($filter);
+	$panel.removeClass("opend");
+	$panel.children().not(":button").hide();
+	$panel.children(".inputButton").hide();
+	if(eventOn === true){
+		_offEvents();
+	}
+
+	$panel = null;
+	$filter = null;
+}
+
+function _offEvents(){
+	canvas.forEachObject(function(obj){
+		if(obj.type === 'line' || obj.type === 'image'){
+			obj.selectable = false;	
+		}else{
+			obj.selectable = true;
+		}
+	});				
+				
+	canvas.off("mouse:down");
+	canvas.off("mouse:move");
+	canvas.off("mouse:up");
+
+	if(canvas.isDrawingMode == true){
+		canvas.isDrawingMode = false;
+	}
+	eventOn = false;
+}
+
+var index = 0;
+var index2 = 0;
+var action = false;
+var jsonArray = [];
+var _json;
+jsonArray[index] = canvas.toJSON();
+
+function undo() {
+	action = true;
+	index2 = (index2 <= 0) ? 0 : index2
+	console.log(index +" : "+index2);				
+	_json = jsonArray[index2]; // 저장하기 전 화면
+	offObserveObject();
+	canvas.loadFromJSON(_json); // observeObject 실행
+	onObserveObject();
+	index2--;
+	index2 = (index2 <= 0) ? 0 : index2;
+	canvas.renderAll();
+}
+
+function redo() {
+	action = true;
+	index2++;
+	index2 = (index2 < index) ? index2++ : index;
+	console.log(index +" : "+index2);
+	_json = jsonArray[index2];
+	offObserveObject();
+	canvas.loadFromJSON(_json);
+	onObserveObject();
+	canvas.renderAll();
+}
+
+function observeObject(e){
+	var object = e.target;
+	console.log(e.target);
+	if (action == true){  
+		action = false;	
+	}else{
+		index++;	
+		jsonArray[index] = canvas.toJSON();
+		index2 = index-1;
+	}
+}
+
+function onObserveObject(){
+	canvas.on({
+		'object:added': observeObject,
+		'object:modified': observeObject,
+		'object:removed': observeObject,
+	});
+}
+
+function offObserveObject(){
+	canvas.off({
+		'object:added': observeObject,
+		'object:modified': observeObject,
+		'object:removed': observeObject,
+	});
+}
+
+
+</script>

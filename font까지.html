@@ -1,0 +1,620 @@
+<!-- <%@ page language="java" contentType="text/html; charset=EUC-KR" pageEncoding="EUC-KR"%> -->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<!DOCTYPE html>
+<html>
+<head>
+<title>index page</title>
+
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="css/colorpicker.css" type="text/css" />
+<link rel="stylesheet" media="screen" type="text/css" href="css/layout.css" />
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+<script src="scripts/all2.js"></script>
+<script src="scripts/base64.js"></script>
+<script src="scripts/canvas2image.js"></script>
+<script src="scripts/colorpicker.js"></script>
+<!--[if IE]><script src="scripts/excanvas.js"></script><![endif]-->
+<!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/r29/html5.js"></script>
+<![endif]-->
+
+<style type="text/css">
+  #editForm { width: 240px; height: 300px; padding: 0.5em; border:1px solid red; background:grey; display:none;position:absolute}
+</style>
+
+</head>
+<body>
+	<div id="wrapper">
+		<!-- canvas container -->
+		<div class="canvas-container">
+			<canvas id="c" width="800px" height="800px"
+				style="border: 1px solid #ccc"></canvas>
+		</div>
+	</div>
+
+	<div>
+		<!-- tool box -->
+		<form name="myForm">
+			<input type="button" value="Insert Text" name="insertText" />
+			<input type="text" value="" name="text" />
+			<input type="text" style="width: 0; visibility: hidden;">
+			<input type="button" value="Circle" name="circle" />
+			<input type="button" value="Rect" name="rect" />
+			<input type="button" value="Arrow" name="arrow" />
+			<input type="button" value="Undo" name="undo" /> 
+			<input type="button" value="Redo" name="redo" />
+			<input type="button" value="Remove" name="remove" />
+			<input type="button" value="align" name="align" />
+			<input type="button" value="lebeledRect" name="labeledRect" />
+			<input type="button" value="startFreeDrawing" name="startFreeDrawing" />
+			<input type="button" value="endFreeDrawing" name="endFreeDrawing" />
+			<input type="button" value="freeDrawRect" name="freeDrawRect" />
+			<input type="button" value="endDrawRect" name="endDrawRect" />
+			<input type="button" value="toPNG" name="toPNG" />
+			<input type="button" value="toJSON" name="toJSON" />
+			<input type="button" value="loadJSON" name="loadJSON" />
+			
+		</form>
+	</div>
+
+	<form>
+		<input type="file" id="file" name="canvasImage" />
+	</form>
+
+	<a id="downImage" target="_blank" href="#" download="testXXX.png">DOWNLOAD ME!</a>
+
+<div id="editForm" class="ui-widget-content">
+	<br />
+	<textarea rows="5" cols="30" id="contents"></textarea> <br />
+
+	<label for="fontSize">Font Size : </label>
+    <span class="fontSizeInfo"/>24 </span><br />
+	<div id="slider"></div>
+	<div id="colorSelector"><div style="background-color: #0000ff"></div></div>
+	<input type="button" value="Bold" name="Bold" />
+	<input type="button" value="Italic" name="Italic" />
+	<input type="button" value="Underline" name="Underline" />
+</div>
+
+
+<script>
+
+</script>
+
+	<script>
+		var canvas;
+		var color = "#999999";
+		var json;
+		$(document).ready(canvasInit);
+		function canvasInit() {
+			canvas = new fabric.Canvas('c');
+			methodInit();			
+			$( "#editForm" ).draggable();
+				
+		}
+
+		function methodInit() {
+			
+			// button action start
+			$("input[name='insertText']").click(insertText);
+			$("input[name='circle']").click(drawCircle);
+			$("input[name='rect']").click(drawRect);
+			$("input[name='arrow']").click(drawArrow);
+			$("input[name='undo']").click(undo);
+			$("input[name='redo']").click(redo);
+			$("input[name='remove']").click(removeObject);
+			$("input[name='align']").click(alignObject);
+			$("input[name='labeledRect']").click(labeledRect);
+			$("input[name='startFreeDrawing']").click(startFreeDrawing);
+			$("input[name='endFreeDrawing']").click(endFreeDrawing);
+			$("input[name='toPNG']").click(toPNG);
+			$("input[name='toJSON']").click(toJSON);
+			$("input[name='loadJSON']").click(loadJSON);
+			$("input[name='freeDrawRect']").click(freeDrawRect);
+			$("input[name='endDrawRect']").click(endDrawRect);
+			$("input[name='canvasImage']").change(function() {
+				changeBackgroundImage(this);
+			});
+
+			// button action end
+
+			// edit form action start
+			$("#contents").keyup(editText);
+			$("input[name='Bold']").click(toggleFontWeight);
+			$("input[name='Italic']").click(toggleItalic);
+			$("input[name='Underline']").click(toggleUnderline);
+			$( "#slider" ).slider({
+				max:200,
+				value:24,
+				slide:modifiedSlider
+			});
+
+			$("#colorSelector").ColorPicker({
+				color:"#ff0000",
+				onChange:changeColor
+			})
+
+
+			// edit form action end
+
+			canvas.on({
+				'object:added': observeObject,
+				'object:modified': observeObject,
+				'object:removed': observeObject,
+			});
+
+			canvas.on({
+				'object:selected' : showEditForm,
+				'object:modified' : showEditForm
+			})
+			canvas.on("selection:cleared",function(){
+				$("#editForm").hide();
+			});
+
+
+			// show edit form start
+			function showEditForm(){
+				var activeObject = canvas.getActiveObject();
+				if(activeObject.type == "text"){
+					var left = activeObject.getCenterPoint().x + (activeObject.getWidth() / 2) + 30;
+					var top = activeObject.getCenterPoint().y - (activeObject.getHeight() / 2);
+
+					$("#editForm").css({
+						"top" : top,
+						"left" : left
+					})
+					.show();
+					$("#contents").val(activeObject.getText());
+					$(".fontSizeInfo").val(activeObject.getFontSize());
+					$(".slider").slider("value",40);
+				}
+			}
+			// show edit form end
+
+			// modified slider start
+			function modifiedSlider(event, ui){
+				$(".fontSizeInfo").text(ui.value);
+				canvas.getActiveObject().setFontSize(ui.value);
+				canvas.renderAll();
+			}
+
+			// modified slider end
+
+			// change color start
+			function changeColor(hsb, hex, rgb){
+				$('#colorSelector div').css('backgroundColor', '#' + hex);
+				canvas.getActiveObject().setColor("#"+hex);
+				canvas.renderAll();
+
+			}
+			// change color end
+
+			// toggle fontweight start
+			function toggleFontWeight(){
+				if(canvas.getActiveObject().fontWeight == 'normal'){
+					canvas.getActiveObject().fontWeight = 'bold';
+				}else{
+					canvas.getActiveObject().fontWeight = 'normal';
+				}
+				canvas.renderAll();
+			}
+
+			// toggle fontweight end
+
+			// toggle italic start
+			function toggleItalic(){
+				if(canvas.getActiveObject().fontStyle == 'normal' || canvas.getActiveObject().fontStyle == ""){
+					canvas.getActiveObject().fontStyle = 'italic';
+				}else{
+					canvas.getActiveObject().fontStyle = 'normal';
+				}
+				canvas.renderAll();
+			}
+
+
+			// toggle underline start
+			function toggleUnderline(){
+				if(canvas.getActiveObject().getTextDecoration() == ""){
+					canvas.getActiveObject().setTextDecoration('underline');
+				}else{
+					canvas.getActiveObject().setTextDecoration("");
+				}
+				canvas.renderAll();
+			}
+
+			// toggle Underline end
+
+
+			//edit text start
+			function editText(){
+					var text = $("#contents").val();
+					activeObject = canvas.getActiveObject();
+					activeObject.setText(text);
+					canvas.renderAll();
+					console.log(text);
+			}
+			//edit text end
+
+
+			//free draw rect start
+			
+			function freeDrawRect(){
+				var started = false;
+				var x = 0;
+				var y = 0;
+
+				canvas.on('mouse:down', function(options) {
+				
+					var mouse = canvas.getPointer(options.e);
+					started = true;
+					x = mouse.x;
+					y = mouse.y;
+					
+					var square = new fabric.Rect({
+						width:0,
+						height:0,
+						left:x,
+						top:y,
+						fill:color
+						
+					});
+					canvas.add(square);
+					canvas.renderAll();
+					canvas.setActiveObject(square);
+				});
+				canvas.on('mouse:move', function(options) {
+					if(!started){
+						return false;
+					}
+					
+					var mouse = canvas.getPointer(options.e);
+					var w = mouse.x - x;
+					var h = mouse.y - y;
+					if(!w || !h){
+						return false;
+					}
+				 	var square = canvas.getActiveObject();
+				 	square.hasControls = false;
+					square.set({width:w,height:h});
+					
+					canvas.renderAll();
+				});
+			canvas.on('mouse:up', function(options) { 
+				if(started){
+					started = false;
+				}
+				
+				var square = canvas.getActiveObject();
+				var positionLeft = square.getCenterPoint().x - Math.abs((square.get('width') /2));
+				var positionTop = square.getCenterPoint().y - Math.abs((square.get('height') /2))
+				square2 = new fabric.Rect({
+					width:Math.abs(square.get('width')),
+					height:Math.abs(square.get('height')),
+					left:positionLeft,
+					top:positionTop,
+					fill:"#ddd",
+				});	
+				canvas.remove(square);
+				square.hasControls = true;
+				canvas.setActiveObject(square2);
+				canvas.add(square2);
+				canvas.renderAll();
+				
+			});
+ 
+			}
+			
+			
+			//free draw rect end
+			
+			// end draw rect start
+			function endDrawRect(){
+				canvas.off('mouse:down');
+				canvas.off('mouse:move');
+				canvas.off('mouse:up');
+				
+			}
+			// end draw rect end
+			
+			// to PNG start
+			function toPNG(){
+				strDataURI = canvas.toDataURL("image/png");
+				Canvas2Image.saveAsPNG(canvas);
+			}
+			
+			// to PNG end
+			
+			
+			// to JSON start
+			function toJSON(){
+				json = $.parseJSON(JSON.stringify(canvas));
+				
+			}
+			// to JSON end
+			
+			// load JSON start
+			function loadJSON(){
+				canvas.loadFromJSON(json);
+				canvas.renderAll();
+			}
+			// loadJSON end
+			
+			// start free drawing start
+			function startFreeDrawing(){
+				canvas.isDrawingMode = true;
+			}
+			// start free drawing end
+			
+			// end free drawing start
+			function endFreeDrawing(){
+				canvas.isDrawingMode = false;
+			}
+			// end free drawing end
+			
+			// labeledRect start
+			function labeledRect(){
+				var labeledRect = new LabeledRect({
+					  width: 50,
+					  height: 50,
+					  left: 100,
+					  top: 100,
+					  label: 'text',
+					  fill: '#faa'
+					});
+					canvas.add(labeledRect);
+			}
+			
+			
+			var LabeledRect = fabric.util.createClass(fabric.Rect, {
+					
+				  type: 'labeledRect',
+				  initialize: function(options) {
+				    options || (options = { });
+
+				    this.callSuper('initialize', options);
+				    this.set('label', options.label || '');
+				  },
+
+				  toObject: function() {
+				    return fabric.util.object.extend(this.callSuper('toObject'), {
+				      label: this.get('label')
+				    });
+				  },
+
+				  _render: function(ctx) {
+				    this.callSuper('_render', ctx);
+
+				    ctx.font = '20px Helvetica';
+				    ctx.fillStyle = '#333';
+				    ctx.fillText(this.label, -this.width/2, -this.height/2 + 20);
+				  }
+				});
+			
+			// labeledRect end
+			
+			// sort object start
+			function alignObject() {
+				var activeObject = canvas.getActiveObject();
+				var centerPoint = activeObject.getCenterPoint();
+				var x = centerPoint.x - (activeObject.getWidth()/2);
+				var y = centerPoint.y - (activeObject.getHeight()/2);
+				activeObject.set({angle:0, left:x, top:y});	
+				canvas.renderAll();
+			}
+			// sort object start
+
+			// draw circle start
+			function drawCircle() {
+				canvas.add(new fabric.Circle({
+					radius : 40,
+					fill : color,
+					top : 125,
+					left : 125,
+					scaleY : 0.5,
+					flipY : true
+				}));
+			}
+			// draw circle end
+
+			// draw rect start
+			function drawRect() {
+				canvas.add(new fabric.Rect({
+					width : 150,
+					height : 150,
+					fill : color,
+					top : 300,
+					left : 300
+				}));
+			}
+			// draw rect end
+
+			// draw arrow start
+			function drawArrow() {
+			/*	var path = new fabric.Path('M 0 0 L 50 0 M 0 0 L 4 -3 M 0 0 L 4 3 z', {
+				    left: 100,
+				    top: 100,
+				    stroke: 'red',
+				    strokeWidth: 1,
+				    fill: false,
+				    originX: 'left',
+				    originY: 'top'
+				});
+				canvas.add(path);
+			*/
+			}
+
+			// draw arrow end
+
+			// insert text start
+
+			function insertText() {
+				var text = $("input[name='text']").val();
+				if (text == "") {
+					text = "Sample";
+				}
+				var textObj = new fabric.Text(text, {
+					fontFamily : 'Delicious_500',
+					left : 100,
+					top : 100,
+					fontSize : 24,
+					textAlign : "left",
+					fill : "red",
+//					textBackgroundColor:"#faa",
+				});
+				canvas.add(textObj);
+				$("input[name='text']").val("");
+			}
+
+			// insert text end
+
+			// change BackgroundImage start
+			//ie 버전에서 input.files if문 안으로 접근 못함, 서버에서 이미지 받아왔을때 수정 예정
+
+			function changeBackgroundImage(input) {
+
+				if (input.files && input.files[0]) {
+					var reader = new FileReader();
+					reader.onload = function(e) {
+						canvas.setBackgroundImage(e.target.result,
+								canvas.renderAll.bind(canvas));
+					};
+					reader.readAsDataURL(input.files[0]);
+				}
+			}
+
+			// change BackgroundImage end
+
+			// addCanvasImage start
+
+			function drawImage() {
+			/*	fabric.Image
+						.fromURL(
+								"http://cfs11.blog.daum.net/image/35/blog/2008/01/10/08/46/47855cd7c7725&filename=47593536d5da0.jpg",
+								function(img) {
+									canvas.add(img.set({
+										left : 250,
+										top : 250,
+										angle : 30
+									}).scale(0.25));
+								});
+			*/}
+
+			// addCanvasImage end
+
+			// shortcut start
+
+			$(document).keydown(function(e) {
+
+				switch (e.keyCode) {
+				case 46:
+					removeObject();
+				case 13:
+					if ($("input[name='text']").is(":focus")) {
+						var textVal = $("input[name='text']").val().trim();
+						if (textVal != "") {
+							insertText();
+						}
+					}
+					break;
+
+				default:
+					break;
+
+				}
+
+			});
+
+			// shortcut end
+
+			// undo, redo start
+
+			var current;
+			var list = [];
+			var state = [];
+			var index = 0;
+			var index2 = 0;
+			var action = false;
+			var refresh = true;
+
+			function undo() {
+	
+				if (index <= 0) {
+					index = 0;
+					return;
+				}
+
+				if (refresh === true) {
+					index--;
+					refresh = false;
+				}
+
+				index2 = index - 1;
+				current = list[index2];
+				current.setOptions(JSON.parse(state[index2]));
+
+				index--;
+				current.setCoords();
+				canvas.renderAll();
+				action = true;
+			}
+
+			function redo() {
+
+				action = true;
+				if (index >= state.length - 1) {
+					return;
+				}
+
+				index2 = index + 1;
+				current = list[index2];
+				current.setOptions(JSON.parse(state[index2]));
+
+				index++;
+				current.setCoords();
+				canvas.renderAll();
+			}
+			function observeObject(e){
+
+				console.log("observe:"+index);
+				var object = e.target;
+
+				if (action === true) {
+					state = [ state[index2] ];
+					list = [ list[index2] ];
+
+					action = false;
+					index = 1;
+				}
+				object.saveState();
+
+				//console.log(object.originalState);
+				state[index] = JSON.stringify(object.originalState);
+				list[index] = object;
+				index++;
+				index2 = index - 1;
+
+				refresh = true;
+
+			}
+
+			
+		
+			// undo, redo end
+
+			// delete object start
+
+			function removeObject() {
+				var activeObject = canvas.getActiveObject();
+				canvas.remove(activeObject);
+			}
+
+			// delete object end
+
+	
+			
+		} // methodInit() end
+	</script>
+
+
+</body>
+</html>
