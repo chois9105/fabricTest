@@ -127,8 +127,6 @@ function canvasInit() {
 	$(".imageOption li:nth-child(3)").click(upBackgroundBrightness);
 	$(".imageOption li:nth-child(4)").click(downBackgroundBrightness);
 	$(".imageOption li:nth-child(5)").click(clipBound);
-	$(".imageOption li:nth-child(6)").click(clipImage);
-	
 	$(".imagePanel .imageFile").change(function(){
 		changeBackgroundImage(this);
 	})
@@ -413,13 +411,12 @@ function startFreeRect(){
 			height:0,
 			left:x,
 			top:y,
-			fill:color,
-			name:clipBound
+			fill:color
+					
 		});
 		canvas.add(square);
 		canvas.renderAll();
 		canvas.setActiveObject(square);
-		
 	});
 	
 	canvas.on('mouse:move', function(options) {
@@ -556,109 +553,107 @@ function downBackgroundBrightness(){
     canvas.discardActiveObject();
 }
 
-var clipRect = null;
-// 지정된 영역만큼 자르기 
 function clipBound(){
+	var image = canvas.item(0);
+	var src = image.getSrc();
 	
-	canvas.clipTo = null;
-	canvas.renderAll();
+	var pos = [0, 0];
 	
-	var started = false;
-	var x = 0;
-	var y = 0;
-	eventOn = true;
-	var width = 0;
-	var height = 0;
-
-	clipRect = null;
-
-	canvas.on('mouse:down', function(options) {
+	var r = document.getElementById('c').getBoundingClientRect();
+	pos[0] = r.left;
+	pos[1] = r.top;
+	
+	var mousex = 0;
+	var mousey = 0;
+	var crop = false;
+	var disabled = false;
+	
+	var el = new fabric.Rect({
+	    //left: 100,
+	    //top: 100,
+	    fill: 'transparent',
+	    originX: 'left',
+	    originY: 'top',
+	    stroke: '#ccc',
+	    strokeDashArray: [2, 2],
+	    opacity: 1,
+	    width: 1,
+	    height: 1
+	});
+	
+	el.visible = true;
+	canvas.add(el);
+	
+	canvas.on({
+		"mouse:down" : _clipMouseDown,	
+		"mouse:move" : _clipMouseMove,	
+		"mouse:up" : _clipMouseUp,
+	});
+	
+	function _clipMouseDown(event){
 		
-				
-		canvas.forEachObject(function(obj){
-			obj.selectable = false;
-		
-			 if(obj.get('name') == 'clipBound'){
-			 		canvas.remove(obj);
-			 		canvas.renderAll();
-			 	}
-		});				
-			
-		var mouse = canvas.getPointer(options.e);
-		started = true;
-		x = mouse.x;
-		y = mouse.y;
+		console.log(event.e.pageX);
+		if (disabled) return;
+    el.left = event.e.pageX - pos[0];
+    el.top = event.e.pageY - pos[1];
+    //el.selectable = false;
+    el.visible = true;
+    mousex = event.e.pageX;
+    mousey = event.e.pageY;
+    crop = true;
+    canvas.bringToFront(el);
+	}
+	
+	function _clipMouseMove(event){
+		if (crop && !disabled) {
+        if (event.e.pageX - mousex > 0) {
+            el.width = event.e.pageX - mousex;
+        }
+
+        if (event.e.pageY - mousey > 0) {
+            el.height = event.e.pageY - mousey;
+        }
+    }
+	}
+	
+	function _clipMouseUp(){
+		crop = false;	
+		clipImage();
+	}
+
+	function clipImage(){
+		var left = el.left - image.left; 
+	  var top = el.top - image.top;
 	  
-		var square = new fabric.Rect({
-			fill : 'transparent',
-			stroke : '#ccc',
-			strokeDashAray: [2,2],
-			width:width,
-			height:height,
-			left:x,
-			top:y,
-			name:'clipBound'
-		});
-		
-		canvas.add(square);
-		canvas.renderAll();
-		canvas.setActiveObject(square);
-	});
+	  console.log(canvas.left);
+	  console.log(canvas.top);
+	  console.log("first left" + left);
+	  console.log("first top" + top);
+	   
+	   
+	  //left *= 1 / 0.25;
+	  //top *= 1 / 0.25;
+	  
+	  
+	  console.log("left" + left);
+	  console.log("top" + top);
+	   
+	  var width = el.width;// * 1 / 0.25;
+	  var height = el.height;// * 1 / 0.25;
+	   
+	  image.clipTo = function (ctx) {
+	  	console.log(ctx);
+	      ctx.rect(left, top, -300, -300);
+	  };
+	  image.selectable = false;
+	  disabled = true;
+	  el.visible = false;
+	  canvas.renderAll();	
+	}
 	
-	canvas.on('mouse:move', function(options) {
-		if(!started){
-			return false;
-		}
-		
-		var mouse = canvas.getPointer(options.e);
-		width = mouse.x - x;
-		height = mouse.y - y;
-		if(!width || !height){
-			return false;
-		}
-	 	var square = canvas.getActiveObject();
-	 	square.hasControls = false;
-		square.set({width:width,height:height});
-		
-		canvas.renderAll();
-	});
 	
-	canvas.on('mouse:up', function(options) { 
-		if(started){
-			started = false;
-		}
-	
-		var square = canvas.getActiveObject();
-		
-		if(square.getWidth() < 0){
-			square.setOriginX('right');
-		}
-		if(square.getHeight() < 0){
-			square.setOriginY('bottom');
-		}
-		
-		var positionLeft = square.getCenterPoint().x - Math.abs((square.get('width') / 2));
-		var positionTop = square.getCenterPoint().y - Math.abs((square.get('height') / 2));	
-		
-			clipRect = new fabric.Rect({
-					left : positionLeft,
-					top : positionTop,
-					width : width,
-					height : height
-			});
-			
-			width = null;
-			height = null;
-	});	
-		 
 }
 
-function clipImage(){
-canvas.clipTo = function(ctx){
-		clipRect.render(ctx);
-	}	
-	canvas.renderAll();
-}
 
 
 // 기존 만들었던 것들은 전부 삭제 후 캔버스 크기의 백그라운드 이미지 생성

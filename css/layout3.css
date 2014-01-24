@@ -152,6 +152,10 @@
 .imageOption li:nth-child(4){
 	background : url("/FabricTest/images/minus.png");
 }
+.imageOption li:nth-child(5){
+	background : url("/FabricTest/images/bound.png");
+}
+
 
 .colorPanel {
 	width:250px;
@@ -232,7 +236,10 @@
 	background : url("/FabricTest/images/memo.png");
 }
 .toolBox li:nth-child(6){
-	background : url("/FabricTest/images/load.png");
+	background : url("/FabricTest/images/plus.png");
+}
+.toolBox li:nth-child(7){
+	background : url("/FabricTest/images/minus.png");
 }
 
 .memo{
